@@ -42,7 +42,7 @@ const CONFIG = {
     dayMaxEvents: true,
     contentHeight: 'auto',
     expandRows: true,
-    slotHeight: 35,
+    slotMinHeight: 35,
     weekends: false,
     headerToolbar: {
       left: 'prev,next today',

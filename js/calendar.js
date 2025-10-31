@@ -136,10 +136,10 @@ function handleCalendarData(response) {
 function initializeCalendar() {
   const calendarEl = getElement('calendar');
 
-  // Mobil için slotHeight ayarı (Bootstrap sm breakpoint)
+  // Mobil için slotMinHeight ayarı (Bootstrap sm breakpoint)
   const calendarConfig = {
     ...CONFIG.calendar,
-    slotHeight: isMobile() ? 50 : 35,
+    slotMinHeight: isMobile() ? 50 : 35,
     eventContent: function(arg) {
       return createEventContent(arg);
     },
