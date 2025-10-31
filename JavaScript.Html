@@ -1,0 +1,1004 @@
+<script>
+// ==========================================
+// CONFIG - Yapılandırma
+// ==========================================
+const CONFIG = {
+  // Sheet yapılandırması
+  sheetConfig: {
+    'guz': [
+      { key: 'donem1-g', name: 'Dönem 1 Güz', icon: 'bi-1-circle' },
+      { key: 'donem2-g', name: 'Dönem 2 Güz', icon: 'bi-2-circle' },
+      { key: 'donem3-g', name: 'Dönem 3 Güz', icon: 'bi-3-circle' },
+      { key: 'secmeli-g', name: 'Seçmeli Dersler', icon: 'bi-star' }
+    ],
+    'bahar': [
+      { key: 'donem1-b', name: 'Dönem 1 Bahar', icon: 'bi-1-circle' },
+      { key: 'donem2-b', name: 'Dönem 2 Bahar', icon: 'bi-2-circle' },
+      { key: 'donem3-b', name: 'Dönem 3 Bahar', icon: 'bi-3-circle' },
+      { key: 'secmeli-b', name: 'Seçmeli Dersler', icon: 'bi-star' }
+    ]
+  },
+
+  // Takvim ayarları
+  calendar: {
+    initialView: 'timeGridWeek',
+    locale: 'tr',
+    allDaySlot: false,
+    nowIndicator: true,
+    slotMinTime: "08:00:00",
+    slotMaxTime: "17:00:00",
+    slotDuration: '00:30:00',
+    height: 'auto',
+    dayMaxEventRows: true,
+    dayMaxEvents: true,
+    contentHeight: 'auto',
+    expandRows: true,
+    slotHeight: 35,
+    weekends: false,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'timeGridWeek,timeGridDay,listWeek'
+    }
+  },
+
+  // Zamanlayıcı ayarları
+  timers: {
+    dateTimeUpdate: 1000, // 1 saniye
+    autoRefresh: 10 * 60 * 1000, // 10 dakika
+    statusHideDelay: 5000, // 5 saniye
+    changeCheckInterval: 30 * 1000 // 30 saniye
+  },
+
+  // Bildirim ayarları
+  notifications: {
+    maxToastCount: 3,
+    toastDuration: 5000,
+    enableSound: false
+  }
+};
+
+// Mevcut dönemi otomatik belirle
+function getCurrentSemester() {
+  const currentMonth = new Date().getMonth() + 1;
+  return (currentMonth >= 2 && currentMonth <= 7) ? 'bahar' : 'guz';
+}
+</script>
+
+<script>
+// ==========================================
+// UTILS - Yardımcı Fonksiyonlar
+// ==========================================
+
+// Global değişkenler
+let calendar;
+let eventCount = 0;
+let currentEvent = null;
+let eventModal;
+let allEvents = [];
+let searchViewActive = false;
+let currentSemester = getCurrentSemester();
+let currentSheetKey = null;
+let changeCheckInterval = null;
+let followedSheets = JSON.parse(localStorage.getItem('followedSheets') || '[]');
+
+// Bootstrap breakpoint yardımcı fonksiyonları
+function isMobile() {
+  return window.innerWidth < 576;
+}
+
+function isTablet() {
+  return window.innerWidth >= 576 && window.innerWidth < 768;
+}
+
+function isDesktop() {
+  return window.innerWidth >= 768;
+}
+
+// Tarih ve saat formatlama
+function formatTime(date, options = { hour: '2-digit', minute: '2-digit' }) {
+  return date ? date.toLocaleTimeString('tr-TR', options) : 'Belirtilmemiş';
+}
+
+function formatDate(date, options = {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+}) {
+  return date ? date.toLocaleDateString('tr-TR', options) : 'Belirtilmemiş';
+}
+
+// Durum mesajları
+function showStatus(type, message, duration = CONFIG.timers.statusHideDelay) {
+  const statusEl = document.getElementById('statusMessage');
+  if (!statusEl) return;
+
+  statusEl.className = `alert alert-${type} alert-dismissible fade show`;
+  statusEl.innerHTML = `
+    <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+
+  if (duration > 0) {
+    setTimeout(() => {
+      const alert = statusEl.querySelector('.alert');
+      if (alert) {
+        alert.classList.remove('show');
+        setTimeout(() => alert.remove(), 150);
+      }
+    }, duration);
+  }
+}
+
+// Loading göstergesi
+function showLoading(show = true) {
+  const loader = document.getElementById('loadingIndicator');
+  if (loader) {
+    loader.style.display = show ? 'flex' : 'none';
+  }
+}
+
+// Sayfa başlığını güncelle
+function updatePageTitle(sheetName = '') {
+  const baseTitle = 'Tıp Fakültesi Ders Programı';
+  document.title = sheetName ? `${sheetName} - ${baseTitle}` : baseTitle;
+}
+
+// URL parametrelerini al
+function getUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    semester: params.get('semester') || currentSemester,
+    sheet: params.get('sheet') || null
+  };
+}
+
+// URL'yi güncelle
+function updateUrl(semester = currentSemester, sheetKey = null) {
+  const url = new URL(window.location);
+  url.searchParams.set('semester', semester);
+  if (sheetKey) {
+    url.searchParams.set('sheet', sheetKey);
+  } else {
+    url.searchParams.delete('sheet');
+  }
+  window.history.replaceState({}, '', url);
+}
+</script>
+
+<script>
+// ==========================================
+// CALENDAR - Takvim Yönetimi
+// ==========================================
+
+// Takvimi başlat
+function initializeCalendar() {
+  const calendarEl = document.getElementById('calendar');
+  if (!calendarEl) return;
+
+  calendar = new FullCalendar.Calendar(calendarEl, {
+    ...CONFIG.calendar,
+    events: [],
+    eventClick: handleEventClick,
+    eventMouseEnter: handleEventMouseEnter,
+    eventMouseLeave: handleEventMouseLeave,
+    datesSet: handleDatesSet
+  });
+
+  calendar.render();
+  updatePageTitle();
+}
+
+// Etkinlik tıklama
+function handleEventClick(info) {
+  currentEvent = info.event;
+  showEventModal(info.event);
+}
+
+// Etkinlik hover
+function handleEventMouseEnter(info) {
+  const tooltip = createEventTooltip(info.event);
+  document.body.appendChild(tooltip);
+}
+
+function handleEventMouseLeave(info) {
+  const tooltip = document.querySelector('.event-tooltip');
+  if (tooltip) tooltip.remove();
+}
+
+// Tarih değişimi
+function handleDatesSet(info) {
+  updateDateTimeDisplay();
+}
+
+// Etkinlik tooltip oluştur
+function createEventTooltip(event) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'event-tooltip position-absolute bg-dark text-white p-2 rounded shadow';
+  tooltip.style.zIndex = '9999';
+  tooltip.style.maxWidth = '300px';
+  tooltip.style.fontSize = '14px';
+
+  const extendedProps = event.extendedProps || {};
+  tooltip.innerHTML = `
+    <div class="fw-bold">${event.title}</div>
+    <div class="small opacity-75">
+      <i class="bi bi-clock me-1"></i>${formatTime(event.start)} - ${formatTime(event.end)}
+      ${extendedProps.location ? `<br><i class="bi bi-geo-alt me-1"></i>${extendedProps.location}` : ''}
+      ${extendedProps.instructor ? `<br><i class="bi bi-person me-1"></i>${extendedProps.instructor}` : ''}
+    </div>
+  `;
+
+  // Pozisyon ayarla
+  const rect = event.el.getBoundingClientRect();
+  tooltip.style.left = `${rect.left + rect.width / 2}px`;
+  tooltip.style.top = `${rect.top - 10}px`;
+  tooltip.style.transform = 'translateX(-50%) translateY(-100%)';
+
+  return tooltip;
+}
+
+// Etkinlikleri yükle
+async function loadEvents(sheetKey) {
+  if (!sheetKey) return;
+
+  try {
+    showLoading(true);
+    const response = await google.script.run.withSuccessHandler(handleEventsLoaded).withFailureHandler(handleEventsError).getSheetData(sheetKey);
+  } catch (error) {
+    console.error('Etkinlik yükleme hatası:', error);
+    showStatus('error', 'Etkinlikler yüklenirken hata oluştu');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Etkinlikler yüklendi
+function handleEventsLoaded(data) {
+  if (!data || !Array.isArray(data)) {
+    showStatus('warning', 'Etkinlik verisi bulunamadı');
+    return;
+  }
+
+  const events = parseEventsFromSheet(data);
+  calendar.removeAllEvents();
+  calendar.addEventSource(events);
+  eventCount = events.length;
+
+  updateEventCount();
+  updatePageTitle(getCurrentSheetName());
+  showStatus('success', `${eventCount} etkinlik yüklendi`);
+}
+
+// Etkinlik hatası
+function handleEventsError(error) {
+  console.error('Sheet verisi alınamadı:', error);
+  showStatus('error', 'Ders programı yüklenirken hata oluştu');
+}
+
+// Sheet verisinden etkinlikleri parse et
+function parseEventsFromSheet(data) {
+  const events = [];
+
+  data.forEach((row, index) => {
+    if (index === 0) return; // Başlık satırını atla
+
+    try {
+      const event = createEventFromRow(row);
+      if (event) events.push(event);
+    } catch (error) {
+      console.warn('Satır parse edilemedi:', row, error);
+    }
+  });
+
+  return events;
+}
+
+// Satırdan etkinlik oluştur
+function createEventFromRow(row) {
+  // Row format: [Tarih, Başlangıç, Bitiş, Ders Adı, Öğretim Üyesi, Yer, Notlar]
+  if (!row[0] || !row[1] || !row[2] || !row[3]) return null;
+
+  const date = new Date(row[0]);
+  const startTime = row[1].split(':');
+  const endTime = row[2].split(':');
+
+  const start = new Date(date);
+  start.setHours(parseInt(startTime[0]), parseInt(startTime[1] || 0));
+
+  const end = new Date(date);
+  end.setHours(parseInt(endTime[0]), parseInt(endTime[1] || 0));
+
+  return {
+    title: row[3],
+    start: start,
+    end: end,
+    extendedProps: {
+      instructor: row[4] || '',
+      location: row[5] || '',
+      notes: row[6] || '',
+      sheetKey: currentSheetKey
+    },
+    backgroundColor: getEventColor(row[3]),
+    borderColor: getEventColor(row[3], true)
+  };
+}
+
+// Etkinlik rengi
+function getEventColor(title, border = false) {
+  const colors = {
+    'Teorik': border ? '#007bff' : '#e3f2fd',
+    'Pratik': border ? '#28a745' : '#e8f5e8',
+    'Seminer': border ? '#ffc107' : '#fff3cd',
+    'default': border ? '#6c757d' : '#f8f9fa'
+  };
+
+  const type = title.toLowerCase().includes('pratik') ? 'Pratik' :
+               title.toLowerCase().includes('seminer') ? 'Seminer' :
+               title.toLowerCase().includes('teorik') ? 'Teorik' : 'default';
+
+  return colors[type];
+}
+
+// Etkinlik sayısını güncelle
+function updateEventCount() {
+  const countEl = document.getElementById('eventCount');
+  if (countEl) {
+    countEl.textContent = eventCount;
+  }
+}
+
+// Geçerli sheet adını al
+function getCurrentSheetName() {
+  if (!currentSheetKey) return '';
+
+  const sheets = CONFIG.sheetConfig[currentSemester] || [];
+  const sheet = sheets.find(s => s.key === currentSheetKey);
+  return sheet ? sheet.name : '';
+}
+
+// Takvim görünümünü değiştir
+function changeCalendarView(view) {
+  if (calendar) {
+    calendar.changeView(view);
+  }
+}
+
+// Bugüne git
+function goToToday() {
+  if (calendar) {
+    calendar.today();
+  }
+}
+
+// Önceki/sonraki
+function navigateCalendar(direction) {
+  if (calendar) {
+    if (direction === 'prev') calendar.prev();
+    else if (direction === 'next') calendar.next();
+  }
+}
+</script>
+
+<script>
+// ==========================================
+// MODAL - Modal Yönetimi
+// ==========================================
+
+// Etkinlik modalını göster
+function showEventModal(event) {
+  const modalEl = document.getElementById('eventModal');
+  if (!modalEl) return;
+
+  const extendedProps = event.extendedProps || {};
+
+  // Modal içeriğini doldur
+  document.getElementById('eventTitle').textContent = event.title;
+  document.getElementById('eventTime').textContent = `${formatTime(event.start)} - ${formatTime(event.end)}`;
+  document.getElementById('eventDate').textContent = formatDate(event.start);
+  document.getElementById('eventInstructor').textContent = extendedProps.instructor || 'Belirtilmemiş';
+  document.getElementById('eventLocation').textContent = extendedProps.location || 'Belirtilmemiş';
+  document.getElementById('eventNotes').textContent = extendedProps.notes || 'Not bulunmuyor';
+
+  // Modal'ı göster
+  eventModal = new bootstrap.Modal(modalEl);
+  eventModal.show();
+}
+
+// Sheet seçim modalını göster
+function showSheetSelector() {
+  const modalEl = document.getElementById('sheetSelectorModal');
+  if (!modalEl) return;
+
+  const container = modalEl.querySelector('.sheet-buttons');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  const sheets = CONFIG.sheetConfig[currentSemester] || [];
+  sheets.forEach(sheet => {
+    const btn = document.createElement('button');
+    btn.className = `btn ${currentSheetKey === sheet.key ? 'btn-primary' : 'btn-outline-primary'} d-flex align-items-center justify-content-center p-3 m-2`;
+    btn.innerHTML = `
+      <i class="bi ${sheet.icon} fs-4 me-2"></i>
+      <span>${sheet.name}</span>
+    `;
+    btn.onclick = () => selectSheet(sheet.key);
+    container.appendChild(btn);
+  });
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+// Sheet seç
+function selectSheet(sheetKey) {
+  currentSheetKey = sheetKey;
+  updateUrl(currentSemester, sheetKey);
+  loadEvents(sheetKey);
+
+  // Modal'ı kapat
+  const modalEl = document.getElementById('sheetSelectorModal');
+  if (modalEl) {
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+  }
+}
+
+// Dönem değiştir
+function changeSemester(semester) {
+  currentSemester = semester;
+  currentSheetKey = null;
+  updateUrl(semester);
+
+  // Aktif sheet butonlarını güncelle
+  updateSemesterButtons();
+
+  // Takvimi temizle
+  if (calendar) {
+    calendar.removeAllEvents();
+    eventCount = 0;
+    updateEventCount();
+  }
+
+  updatePageTitle();
+  showStatus('info', `${semester === 'guz' ? 'Güz' : 'Bahar'} dönemi seçildi`);
+}
+
+// Dönem butonlarını güncelle
+function updateSemesterButtons() {
+  document.querySelectorAll('.semester-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.semester === currentSemester);
+  });
+}
+
+// Bildirim ayarları modalını göster
+function showNotificationSettings() {
+  const modalEl = document.getElementById('notificationSettingsModal');
+  if (!modalEl) return;
+
+  // Takip edilen sheet'leri yükle
+  loadFollowedSheets();
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+// Takip edilen sheet'leri yükle
+function loadFollowedSheets() {
+  const container = document.getElementById('followedSheetsList');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  Object.entries(CONFIG.sheetConfig).forEach(([semester, sheets]) => {
+    const semesterDiv = document.createElement('div');
+    semesterDiv.className = 'mb-3';
+    semesterDiv.innerHTML = `<h6 class="text-capitalize">${semester} Dönemi</h6>`;
+
+    sheets.forEach(sheet => {
+      const isFollowed = followedSheets.includes(sheet.key);
+
+      const checkbox = document.createElement('div');
+      checkbox.className = 'form-check';
+      checkbox.innerHTML = `
+        <input class="form-check-input" type="checkbox" id="follow-${sheet.key}" ${isFollowed ? 'checked' : ''}>
+        <label class="form-check-label" for="follow-${sheet.key}">
+          <i class="bi ${sheet.icon} me-2"></i>${sheet.name}
+        </label>
+      `;
+
+      checkbox.querySelector('input').addEventListener('change', (e) => {
+        toggleSheetFollow(sheet.key, e.target.checked);
+      });
+
+      semesterDiv.appendChild(checkbox);
+    });
+
+    container.appendChild(semesterDiv);
+  });
+}
+
+// Sheet takip et/durdur
+function toggleSheetFollow(sheetKey, follow) {
+  if (follow) {
+    if (!followedSheets.includes(sheetKey)) {
+      followedSheets.push(sheetKey);
+    }
+  } else {
+    followedSheets = followedSheets.filter(key => key !== sheetKey);
+  }
+
+  localStorage.setItem('followedSheets', JSON.stringify(followedSheets));
+  showStatus('success', `Sheet ${follow ? 'takip ediliyor' : 'takip durduruldu'}`);
+}
+</script>
+
+<script>
+// ==========================================
+// SEARCH - Arama İşlevselliği
+// ==========================================
+
+// Arama başlat
+function initializeSearch() {
+  const searchInput = document.getElementById('searchInput');
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', handleSearchInput);
+  searchInput.addEventListener('focus', showSearchView);
+  searchInput.addEventListener('blur', hideSearchView);
+}
+
+// Arama input işlemi
+function handleSearchInput(e) {
+  const query = e.target.value.trim().toLowerCase();
+  if (query.length < 2) {
+    hideSearchResults();
+    return;
+  }
+
+  const results = searchEvents(query);
+  showSearchResults(results);
+}
+
+// Etkinliklerde ara
+function searchEvents(query) {
+  return allEvents.filter(event => {
+    const title = event.title?.toLowerCase() || '';
+    const instructor = event.extendedProps?.instructor?.toLowerCase() || '';
+    const location = event.extendedProps?.location?.toLowerCase() || '';
+    const notes = event.extendedProps?.notes?.toLowerCase() || '';
+
+    return title.includes(query) ||
+           instructor.includes(query) ||
+           location.includes(query) ||
+           notes.includes(query);
+  });
+}
+
+// Arama sonuçlarını göster
+function showSearchResults(results) {
+  const resultsEl = document.getElementById('searchResults');
+  if (!resultsEl) return;
+
+  if (results.length === 0) {
+    resultsEl.innerHTML = '<div class="p-3 text-muted">Sonuç bulunamadı</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+
+  resultsEl.innerHTML = results.map(event => `
+    <div class="search-result-item p-3 border-bottom" onclick="focusEvent('${event.id}')">
+      <div class="fw-bold">${event.title}</div>
+      <div class="small text-muted">
+        <i class="bi bi-clock me-1"></i>${formatTime(event.start)} - ${formatTime(event.end)}
+        ${event.extendedProps?.location ? `<i class="bi bi-geo-alt ms-2 me-1"></i>${event.extendedProps.location}` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  resultsEl.style.display = 'block';
+}
+
+// Arama sonuçlarını gizle
+function hideSearchResults() {
+  const resultsEl = document.getElementById('searchResults');
+  if (resultsEl) {
+    resultsEl.style.display = 'none';
+  }
+}
+
+// Arama görünümünü göster
+function showSearchView() {
+  searchViewActive = true;
+  document.body.classList.add('search-active');
+}
+
+// Arama görünümünü gizle
+function hideSearchView() {
+  setTimeout(() => {
+    if (!searchViewActive) {
+      hideSearchResults();
+      document.body.classList.remove('search-active');
+    }
+  }, 200);
+}
+
+// Etkinliğe odaklan
+function focusEvent(eventId) {
+  if (!calendar) return;
+
+  const event = calendar.getEventById(eventId);
+  if (event) {
+    calendar.gotoDate(event.start);
+    event.setProp('classNames', ['event-highlight']);
+
+    setTimeout(() => {
+      event.setProp('classNames', []);
+    }, 3000);
+  }
+
+  hideSearchResults();
+  document.getElementById('searchInput').blur();
+}
+</script>
+
+<script>
+// ==========================================
+// NOTIFICATIONS - Bildirim Sistemi
+// ==========================================
+
+// Bildirim kontrolü
+function initializeNotifications() {
+  // Sayfa yüklendiğinde değişiklik kontrolü başlat
+  startChangeMonitoring();
+
+  // Sayfa görünür olduğunda kontrolü yeniden başlat
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      startChangeMonitoring();
+    }
+  });
+}
+
+// Değişiklik izlemeyi başlat
+function startChangeMonitoring() {
+  if (changeCheckInterval) {
+    clearInterval(changeCheckInterval);
+  }
+
+  changeCheckInterval = setInterval(checkForChanges, CONFIG.timers.changeCheckInterval);
+}
+
+// Değişiklik kontrolü
+async function checkForChanges() {
+  if (followedSheets.length === 0) return;
+
+  try {
+    const response = await google.script.run.withSuccessHandler(handleChangesFound).withFailureHandler(handleChangesError).getRecentChanges(followedSheets);
+  } catch (error) {
+    console.log('Değişiklik kontrolü hatası:', error);
+  }
+}
+
+// Değişiklikler bulundu
+function handleChangesFound(changes) {
+  if (!changes || changes.length === 0) return;
+
+  changes.forEach(change => {
+    showInAppNotification(change);
+  });
+}
+
+// Değişiklik hatası
+function handleChangesError(error) {
+  console.log('Değişiklik verisi alınamadı:', error);
+}
+
+// Uygulama içi bildirim göster
+function showInAppNotification(change) {
+  const toastContainer = document.getElementById('toastContainer');
+  if (!toastContainer) return;
+
+  // Maksimum toast sayısını kontrol et
+  const existingToasts = toastContainer.querySelectorAll('.notification-toast');
+  if (existingToasts.length >= CONFIG.notifications.maxToastCount) {
+    existingToasts[0].remove();
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'notification-toast alert alert-info alert-dismissible fade show shadow-sm';
+  toast.innerHTML = `
+    <div class="d-flex align-items-start">
+      <i class="bi bi-bell-fill me-2 mt-1"></i>
+      <div class="flex-grow-1">
+        <div class="fw-bold">${change.sheetName}</div>
+        <div class="small">${change.message}</div>
+        <div class="small text-muted mt-1">${formatDate(new Date(change.timestamp))}</div>
+      </div>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+
+  toastContainer.appendChild(toast);
+
+  // Otomatik gizle
+  setTimeout(() => {
+    if (toast && toast.parentNode) {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 150);
+    }
+  }, CONFIG.notifications.toastDuration);
+}
+
+// Bildirim ayarlarını sıfırla
+function resetNotificationSettings() {
+  followedSheets = [];
+  localStorage.removeItem('followedSheets');
+  showStatus('success', 'Bildirim ayarları sıfırlandı');
+}
+</script>
+
+<script>
+// ==========================================
+// PWA - Progressive Web App Özellikleri
+// ==========================================
+
+// PWA başlat
+function initializePWA() {
+  // Service Worker kayıt
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('Service Worker kayıt edildi:', registration);
+      })
+      .catch(error => {
+        console.log('Service Worker kayıt edilemedi:', error);
+      });
+  }
+
+  // Fullscreen modu başlat
+  initializeFullscreenMode();
+
+  // Install prompt
+  window.addEventListener('beforeinstallprompt', handleInstallPrompt);
+}
+
+// Install prompt yakala
+let deferredPrompt;
+function handleInstallPrompt(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+}
+
+// Install banner göster
+function showInstallBanner() {
+  if (localStorage.getItem('installBannerDismissed')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.className = 'position-fixed bottom-0 start-0 end-0 bg-primary text-white p-3';
+  banner.style.zIndex = '9998';
+  banner.innerHTML = `
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-download fs-3 me-3"></i>
+        <div>
+          <div class="fw-bold">Uygulama Olarak Yükle</div>
+          <div class="small opacity-75">Ana ekrana ekleyerek hızlı erişim sağlayın</div>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-light btn-sm" onclick="installPWA()">
+          <i class="bi bi-download me-1"></i>Yükle
+        </button>
+        <button class="btn btn-outline-light btn-sm" onclick="dismissInstallBanner()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(banner);
+}
+
+// PWA yükle
+async function installPWA() {
+  if (!deferredPrompt) return;
+
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if (outcome === 'accepted') {
+    console.log('PWA kurulumu kabul edildi');
+  }
+
+  deferredPrompt = null;
+  dismissInstallBanner();
+}
+
+// Install banner kapat
+function dismissInstallBanner() {
+  const banner = document.getElementById('installBanner');
+  if (banner) {
+    banner.remove();
+    localStorage.setItem('installBannerDismissed', 'true');
+  }
+}
+
+// Fullscreen modu başlat
+function initializeFullscreenMode() {
+  if (!isMobile()) return;
+
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true;
+
+  if (isPWA) {
+    setTimeout(() => requestFullscreenMode(), 1000);
+  } else {
+    showFullscreenBanner();
+  }
+}
+
+// Fullscreen iste
+async function requestFullscreenMode() {
+  try {
+    const elem = document.documentElement;
+
+    if (elem.requestFullscreen) {
+      await elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) {
+      await elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      await elem.msRequestFullscreen();
+    }
+
+    console.log('Fullscreen aktif');
+    showStatus('success', 'Tam ekran modu aktif 📱');
+  } catch (error) {
+    console.log('Fullscreen desteklenmiyor:', error);
+    enablePseudoFullscreen();
+  }
+}
+
+// Pseudo fullscreen
+function enablePseudoFullscreen() {
+  document.body.classList.add('pseudo-fullscreen');
+  showStatus('success', 'Mobil uyumlu mod aktif 📱');
+}
+
+// Fullscreen banner göster
+function showFullscreenBanner() {
+  if (localStorage.getItem('fullscreenBannerDismissed')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'fullscreenBanner';
+  banner.className = 'position-fixed bottom-0 start-0 end-0 bg-dark text-white p-3';
+  banner.style.zIndex = '9999';
+  banner.innerHTML = `
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-fullscreen fs-3 me-3"></i>
+        <div>
+          <div class="fw-bold">Tam Ekran Modu</div>
+          <div class="small opacity-75">Daha iyi deneyim için tam ekran kullanın</div>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-light btn-sm" onclick="requestFullscreenMode()">
+          <i class="bi bi-fullscreen me-1"></i>Aktif Et
+        </button>
+        <button class="btn btn-outline-light btn-sm" onclick="dismissFullscreenBanner()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(banner);
+
+  setTimeout(() => {
+    if (banner && !banner.classList.contains('d-none')) {
+      banner.remove();
+    }
+  }, 10000);
+}
+
+// Fullscreen banner kapat
+function dismissFullscreenBanner() {
+  const banner = document.getElementById('fullscreenBanner');
+  if (banner) {
+    banner.remove();
+    localStorage.setItem('fullscreenBannerDismissed', 'true');
+  }
+}
+</script>
+
+<script>
+// ==========================================
+// APP - Ana Uygulama Başlatıcısı
+// ==========================================
+
+// Uygulama başlat
+function initializeApp() {
+  console.log('Uygulama başlatılıyor...');
+
+  // URL parametrelerini al
+  const params = getUrlParams();
+  currentSemester = params.semester;
+  currentSheetKey = params.sheet;
+
+  // Bileşenleri başlat
+  initializeCalendar();
+  initializeSearch();
+  initializeNotifications();
+  initializePWA();
+
+  // Zamanlayıcıları başlat
+  startTimers();
+
+  // Sayfa yüklendiğinde sheet yükle
+  if (currentSheetKey) {
+    loadEvents(currentSheetKey);
+  }
+
+  // UI güncellemeleri
+  updateSemesterButtons();
+  updateDateTimeDisplay();
+
+  console.log('Uygulama başlatıldı ✓');
+}
+
+// Zamanlayıcıları başlat
+function startTimers() {
+  // Tarih/saat güncelleme
+  setInterval(updateDateTimeDisplay, CONFIG.timers.dateTimeUpdate);
+
+  // Otomatik yenileme
+  setInterval(() => {
+    if (currentSheetKey && !searchViewActive) {
+      loadEvents(currentSheetKey);
+    }
+  }, CONFIG.timers.autoRefresh);
+}
+
+// Tarih ve saat gösterimini güncelle
+function updateDateTimeDisplay() {
+  const now = new Date();
+  const timeEl = document.getElementById('currentTime');
+  const dateEl = document.getElementById('currentDate');
+
+  if (timeEl) {
+    timeEl.textContent = formatTime(now);
+  }
+
+  if (dateEl) {
+    dateEl.textContent = formatDate(now, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+}
+
+// Sayfa yüklendiğinde başlat
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Hata yakalama
+window.addEventListener('error', (e) => {
+  console.error('JavaScript hatası:', e.error);
+  showStatus('error', 'Bir hata oluştu. Sayfayı yenileyin.');
+});
+
+// Unhandled promise rejection
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Promise hatası:', e.reason);
+  showStatus('error', 'Bir işlem başarısız oldu.');
+});
+
+</script>
+

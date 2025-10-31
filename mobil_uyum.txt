@@ -1,0 +1,330 @@
+Evet! Google imkanlarıyla web uygulamanızı mobil uygulamaya çevirebiliriz. İşte birkaç yöntem:
+1. PWA (Progressive Web App) - EN İYİ ÇÖZÜM
+
+manifest.json dosyası ekleyerek PWA yapalım:
+manifest.json dosyası oluşturun (Google Apps Script'te HTML olarak)
+html
+
+<!-- manifest.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+</head>
+<body>
+    <script>
+        // Bu dosyayı manifest.json olarak serve edeceğiz
+        const manifest = {
+            "name": "Dönem 3 Programı",
+            "short_name": "Dönem3",
+            "description": "Uludağ Üniversitesi Tıp Fakültesi Dönem 3 Programı",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#667eea",
+            "theme_color": "#2c5aa0",
+            "orientation": "portrait",
+            "icons": [
+                {
+                    "src": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/bootstrap-icons.svg",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml",
+                    "purpose": "any maskable"
+                },
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iNzAiIGZpbGw9IiMyYzVhYTAiLz4KPHN2ZyB4PSIxMjgiIHk9IjEyOCIgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIGZpbGw9IndoaXRlIiB2aWV3Qm94PSIwIDAgMjQgMjQiPgo8cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptLTIgMTVsLTUtNSA0LjAxLTQuMDFMMTAgMTEuOTlsNi45OS02Ljk5IDQuMDEgNC4wMUwxMCAxN3oiPjwvcGF0aD4KPC9zdmc+Cjwvc3ZnPgo=",
+                    "sizes": "512x512",
+                    "type": "image/svg+xml",
+                    "purpose": "any maskable"
+                }
+            ],
+            "categories": ["education", "productivity"],
+            "lang": "tr"
+        };
+        
+        // JSON olarak döndür
+        const output = ContentService.createTextOutput(JSON.stringify(manifest));
+        output.setMimeType(ContentService.MimeType.JSON);
+        output.setContent(JSON.stringify(manifest));
+    </script>
+</body>
+</html>
+
+Google Apps Script'e manifest servis fonksiyonu ekleyin:
+javascript
+
+// PWA manifest servisi
+function serveManifest() {
+  const manifest = {
+    "name": "Dönem 3 Programı",
+    "short_name": "Dönem3",
+    "description": "Uludağ Üniversitesi Tıp Fakültesi Dönem 3 Programı",
+    "start_url": "https://script.google.com/macros/s/" + ScriptApp.getScriptId() + "/exec",
+    "display": "standalone",
+    "background_color": "#667eea",
+    "theme_color": "#2c5aa0",
+    "orientation": "portrait-primary",
+    "icons": [
+      {
+        "src": "https://img.icons8.com/ios-filled/512/calendar.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "https://img.icons8.com/ios-filled/512/calendar.png", 
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ],
+    "categories": ["education", "productivity"],
+    "lang": "tr"
+  };
+  
+  return ContentService.createTextOutput(JSON.stringify(manifest))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders({
+      'Access-Control-Allow-Origin': '*'
+    });
+}
+
+HTML'i PWA uyumlu hale getirin:
+
+index.html head kısmına şunları ekleyin:
+html
+
+<!-- PWA Meta Tags -->
+<meta name="application-name" content="Dönem 3 Programı">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dönem3">
+<meta name="description" content="Uludağ Üniversitesi Tıp Fakültesi Dönem 3 Programı">
+<meta name="format-detection" content="telephone=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="msapplication-config" content="/icons/browserconfig.xml">
+<meta name="msapplication-TileColor" content="#2c5aa0">
+<meta name="msapplication-tap-highlight" content="no">
+<meta name="theme-color" content="#2c5aa0">
+
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/512/calendar.png">
+<link rel="apple-touch-icon" sizes="152x152" href="https://img.icons8.com/ios-filled/512/calendar.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/ios-filled/512/calendar.png">
+<link rel="apple-touch-icon" sizes="167x167" href="https://img.icons8.com/ios-filled/512/calendar.png">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="/macros/s/<?= ScriptApp.getScriptId() ?>/exec?action=manifest">
+
+<!-- Service Worker Registration -->
+<script>
+// Service Worker kaydı
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    const swUrl = '/macros/s/<?= ScriptApp.getScriptId() ?>/exec?action=sw';
+    
+    navigator.serviceWorker.register(swUrl)
+      .then(function(registration) {
+        console.log('SW registered: ', registration);
+      })
+      .catch(function(registrationError) {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
+}
+
+// PWA yükleme prompt'u
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallPromotion();
+});
+
+function showInstallPromotion() {
+  const installDiv = document.createElement('div');
+  installDiv.className = 'position-fixed bottom-0 start-0 end-0 p-3 bg-primary text-white';
+  installDiv.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center">
+      <span>📱 Uygulamayı yüklemek ister misiniz?</span>
+      <div>
+        <button class="btn btn-light btn-sm me-2" onclick="installApp()">Yükle</button>
+        <button class="btn btn-outline-light btn-sm" onclick="this.parentElement.parentElement.remove()">Kapat</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(installDiv);
+}
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('Kullanıcı PWA yüklemeyi kabul etti');
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+</script>
+
+Service Worker ekleyin:
+javascript
+
+// Service Worker için yeni bir fonksiyon
+function serveServiceWorker() {
+  const swContent = `
+    const CACHE_NAME = 'donem3-v1';
+    const urlsToCache = [
+      '/',
+      'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
+      'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css',
+      'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css',
+      'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
+      'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'
+    ];
+
+    self.addEventListener('install', function(event) {
+      event.waitUntil(
+        caches.open(CACHE_NAME)
+          .then(function(cache) {
+            return cache.addAll(urlsToCache);
+          })
+      );
+    });
+
+    self.addEventListener('fetch', function(event) {
+      event.respondWith(
+        caches.match(event.request)
+          .then(function(response) {
+            if (response) {
+              return response;
+            }
+            return fetch(event.request);
+          }
+        )
+      );
+    });
+  `;
+  
+  return ContentService.createTextOutput(swContent)
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+doGet fonksiyonunu güncelleyin:
+javascript
+
+function doGet(e) {
+  try {
+    logExecutionContext('doGet');
+    const params = (e && e.parameter) ? e.parameter : {};
+    
+    // Manifest isteği
+    if (params.action === 'manifest') {
+      return serveManifest();
+    }
+    
+    // Service Worker isteği
+    if (params.action === 'sw') {
+      return serveServiceWorker();
+    }
+    
+    const email = Session.getActiveUser().getEmail();
+    if (!email || !/@(ogr\.)?uludag\.edu\.tr$/.test(email)) {
+      return createErrorResponse('❌ Sadece Uludağ Üniversitesi hesaplarıyla giriş yapılabilir.');
+    }
+    
+    // İsteğe bağlı tanılama çıktıları
+    if (params.action === 'health') {
+      const res = healthCheck();
+      return HtmlService.createHtmlOutput(`<pre>${JSON.stringify(res, null, 2)}</pre>`) 
+        .setTitle('Health Check')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    if (params.action === 'debug') {
+      let res;
+      try { res = debugGetSheetInfo(); } catch (err) { res = { success: false, error: String(err) }; }
+      return HtmlService.createHtmlOutput(`<pre>${JSON.stringify(res, null, 2)}</pre>`) 
+        .setTitle('Debug Info')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    
+    const htmlOutput = HtmlService.createHtmlOutputFromFile('index')
+      .setTitle('Dönem 3 Haftalık Eğitim Programı')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+      .setFaviconUrl('https://img.icons8.com/ios-filled/512/calendar.png');
+    
+    return htmlOutput;
+    
+  } catch (error) {
+    console.error('doGet error:', error);
+    return createErrorResponse('❌ Sistem hatası. Lütfen daha sonra tekrar deneyin.');
+  }
+}
+
+2. Kurulum Talimatları
+
+Öğrencilere şu talimatları verebilirsiniz:
+Android için:
+
+    Chrome'da uygulamayı aç
+
+    Menüye tıkla → "Ana ekrana ekle"
+
+    "Ekle" butonuna bas
+
+iOS için:
+
+    Safari'de uygulamayı aç
+
+    Paylaş butonuna tıkla → "Ana Ekrana Ekle"
+
+    "Ekle" butonuna bas
+
+3. Push Bildirimleri için Alternatif
+
+PWA push bildirimleri için daha kompleks bir kurulum gerekiyor. Bunun yerine basit bir çözüm:
+javascript
+
+// Basit bildirim sistemi
+function showLocalNotification(title, message) {
+  if ("Notification" in window) {
+    if (Notification.permission === "granted") {
+      new Notification(title, { body: message, icon: "/icons/icon-192.png" });
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification(title, { body: message, icon: "/icons/icon-192.png" });
+        }
+      });
+    }
+  }
+}
+
+// Kullanım örneği
+function checkTodaysClasses() {
+  const now = new Date();
+  const todayString = now.toISOString().split('T')[0];
+  
+  const todayEvents = allEvents.filter(event => 
+    event.start.startsWith(todayString)
+  );
+  
+  if (todayEvents.length > 0) {
+    showLocalNotification(
+      "📚 Bugünkü Dersler", 
+      `${todayEvents.length} dersiniz var!`
+    );
+  }
+}
+
+Bu şekilde öğrenciler:
+
+    📱 Uygulamayı ana ekrana ekleyebilir
+
+    🔔 Offline çalışabilir
+
+    🚀 Hızlı yüklenir
+
+    📱 Tam ekran deneyim yaşar
+
+PWA, Google Apps Script ile mükemmel çalışır ve gerçek bir mobil uygulama deneyimi sunar!
