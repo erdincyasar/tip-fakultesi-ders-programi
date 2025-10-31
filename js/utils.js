@@ -1,5 +1,5 @@
-// Version: 5
-// Updated: 2025-10-31T19:54:06Z
+// Version: 6
+// Updated: 2025-10-31T20:08:01Z
 
 // ==========================================
 // UTILS - Yardımcı Fonksiyonlar

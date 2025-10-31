@@ -1,5 +1,5 @@
-// Version: 5
-// Updated: 2025-10-31T19:54:06Z
+// Version: 6
+// Updated: 2025-10-31T20:08:01Z
 
 // ==========================================
 // PWA - Progressive Web App Özellikleri
@@ -9,7 +9,7 @@
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     // Standalone web app için sw.js dosyasını kullan
-    navigator.serviceWorker.register('https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/sw.js')
+    navigator.serviceWorker.register('https://www.uludag.edu.tr/dosyalar/tip/asama1/jssw.js')
       .then(function(registration) {
         console.log('SW registered: ', registration);
 

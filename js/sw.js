@@ -1,12 +1,12 @@
-// Version: 5
-// Updated: 2025-10-31T19:54:06Z
+// Version: 6
+// Updated: 2025-10-31T20:08:01Z
 
 // Service Worker for PWA functionality
 const CACHE_NAME = 'ders-programi-v2.0.0';
 const urlsToCache = [
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/Index.html',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/manifest.json',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/Index.html',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/manifest.json',
   // Bootstrap CSS
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   // Bootstrap JS
@@ -16,15 +16,15 @@ const urlsToCache = [
   // Bootstrap Icons
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css',
   // Modular JS Files
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/sw.js',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/sw.js',
 
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/config.js',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/utils.js',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/calendar.js',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/modal.js',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/search.js',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/pwa.js',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/app.js'
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/config.js',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/utils.js',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/calendar.js',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/modal.js',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/search.js',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/pwa.js',
+  'https://www.uludag.edu.tr/dosyalar/tip/asama1/js/app.js'
 ];
 
 // Runtime cache for dynamic content
