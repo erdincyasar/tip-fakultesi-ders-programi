@@ -139,7 +139,7 @@ function initializeCalendar() {
   // Mobil için slotMinHeight ayarı (Bootstrap sm breakpoint)
   const calendarConfig = {
     ...CONFIG.calendar,
-    slotMinHeight: isMobile() ? 50 : 35,
+    slotMinHeight: isMobile() ? 70 : 35,
     eventContent: function(arg) {
       return createEventContent(arg);
     },
