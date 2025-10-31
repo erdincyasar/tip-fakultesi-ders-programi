@@ -191,8 +191,8 @@ function doGet(e) {
       'Access-Control-Max-Age': '3600'
     };
 
-    // OPTIONS request (CORS preflight)
-    if (e && e.method === 'OPTIONS') {
+    // OPTIONS request (CORS preflight) - method kontrolü
+    if (params.method === 'OPTIONS' || (e && e.method === 'OPTIONS')) {
       return ContentService
         .createTextOutput('')
         .setMimeType(ContentService.MimeType.TEXT)
@@ -244,7 +244,10 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile('Index');
     return template.evaluate()
         .setTitle('Tıp Fakültesi Dönem Programları')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('Access-Control-Allow-Origin', '*')
+        .addMetaTag('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
 
   } catch (error) {
     console.error('doGet fonksiyonu hatası:', error);
@@ -776,6 +779,8 @@ function logExecutionContext(prefix) {
   console.log(`${prefix || 'CTX'} | activeUser=${ctx.activeEmail || '(boş)'} | effectiveUser=${ctx.effectiveEmail || '(boş)'}`);
 }
 
+// İKİNCİ doGet FONKSİYONU KALDIRILDI - İlk doGet kullanılıyor
+/*
 function doGet(e) {
   try {
     logExecutionContext('doGet');
@@ -812,6 +817,7 @@ function doGet(e) {
     return createErrorResponse('❌ Sistem hatası. Lütfen daha sonra tekrar deneyin.');
   }
 }
+*/
 
 // HTML dosyalarını include etmek için gerekli fonksiyon
 function include(filename) {

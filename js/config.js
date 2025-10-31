@@ -1,5 +1,5 @@
-// Version: 4
-// Updated: 2025-10-31T13:28:37Z
+// Version: 5
+// Updated: 2025-10-31T19:54:06Z
 
 // ==========================================
 // CONFIG - Yapılandırma
@@ -7,7 +7,7 @@
 const CONFIG = {
   // API yapılandırması
   api: {
-    baseUrl: 'https://script.google.com/macros/s/AKfycbyo2XgEUp8Jk1a7d4OAE6WbU3fIskfXZMp0gTNyBkcLjXvdDxI8OvRehVCDtLlVXRgkWQ/exec',
+    baseUrl: 'https://script.google.com/macros/s/AKfycbwjDdKvq5QhdXoEAuxDUSV3lQ5NEjRE8ApWWW7L9KwBrpq_YxolQT04U51HlhuOR7hfJA/exec',
     endpoints: {
       getCalendarData: 'getCalendarData',
       getAvailableSheets: 'getAvailableSheets',

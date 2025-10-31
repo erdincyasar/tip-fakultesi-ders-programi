@@ -7,7 +7,7 @@
 # Repo bilgisi
 REPO="erdincyasar/tip-fakultesi-ders-programi"
 
-# Güncellenecek JS dosyaları - Versiyon: 4
+# Güncellenecek JS dosyaları - Versiyon: 5
 FILES=(
   "js/sw.js"
   "js/config.js"
@@ -17,6 +17,7 @@ FILES=(
   "js/search.js"
   "js/pwa.js"
   "js/app.js"
+  "css/styles.css"
 )
 
 # -------------------------------
@@ -49,7 +50,7 @@ echo ""
 echo "📝 Script versiyonunu güncelleniyor..."
 VERSION=$(jq -r '.version' version.json)
 UPDATED=$(jq -r '.updated' version.json)
-sed -i "s/# Güncellenecek JS dosyaları - Versiyon: 4[0-9]*/# Güncellenecek JS dosyaları - Versiyon: $VERSION/" cdnpurgepush.sh
+sed -i "s/# Güncellenecek JS dosyaları - Versiyon: 5[0-9]*/# Güncellenecek JS dosyaları - Versiyon: $VERSION/" cdnpurgepush.sh
 
 # -------------------------------
 # 2.1️⃣ JS Dosyalarına Versiyon Ekleme
