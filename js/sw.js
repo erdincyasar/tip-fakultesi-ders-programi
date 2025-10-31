@@ -4,7 +4,6 @@ const urlsToCache = [
   'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/',
   'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/Index.html',
   'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/manifest.json',
-  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/sw.js',
   // Bootstrap CSS
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   // Bootstrap JS
@@ -14,6 +13,8 @@ const urlsToCache = [
   // Bootstrap Icons
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css',
   // Modular JS Files
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/sw.js',
+
   'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/config.js',
   'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/utils.js',
   'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/calendar.js',
