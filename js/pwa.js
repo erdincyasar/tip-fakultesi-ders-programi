@@ -5,10 +5,8 @@
 // Service Worker Registration & PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    // Google Apps Script için özel SW URL'i
-    const swUrl = '/macros/s/<?= ScriptApp.getScriptId() ?>/exec?action=sw';
-
-    navigator.serviceWorker.register(swUrl)
+    // Standalone web app için sw.js dosyasını kullan
+    navigator.serviceWorker.register('https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/sw.js')
       .then(function(registration) {
         console.log('SW registered: ', registration);
 

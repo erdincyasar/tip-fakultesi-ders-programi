@@ -1,18 +1,26 @@
 // Service Worker for PWA functionality
-const CACHE_NAME = 'ders-programi-v1.1.0';
+const CACHE_NAME = 'ders-programi-v2.0.0';
 const urlsToCache = [
-  '/',
-  '/manifest.json',
-  '/Style.html',
-  '/JavaScript.html',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/Index.html',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/manifest.json',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/sw.js',
+  // Bootstrap CSS
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
+  // Bootstrap JS
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
+  // FullCalendar
   'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js',
-  'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css',
   // Bootstrap Icons
-  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css',
-  // Google Fonts
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
+  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css',
+  // Modular JS Files
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/config.js',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/utils.js',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/calendar.js',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/modal.js',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/search.js',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/pwa.js',
+  'https://cdn.jsdelivr.net/gh/erdincyasar/tip-fakultesi-ders-programi/js/app.js'
 ];
 
 // Runtime cache for dynamic content
