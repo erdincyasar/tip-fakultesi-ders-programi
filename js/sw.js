@@ -1,3 +1,6 @@
+// Version: 4
+// Updated: 2025-10-31T13:28:37Z
+
 // Service Worker for PWA functionality
 const CACHE_NAME = 'ders-programi-v2.0.0';
 const urlsToCache = [
