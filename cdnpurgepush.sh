@@ -7,7 +7,7 @@
 # Repo bilgisi
 REPO="erdincyasar/tip-fakultesi-ders-programi"
 
-# Güncellenecek JS dosyaları
+# Güncellenecek JS dosyaları - Versiyon: 3
 FILES=(
   "js/sw.js"
   "js/config.js"
@@ -43,7 +43,15 @@ echo "✅ Yeni versiyon: $(jq -r '.version' version.json)"
 echo "🕒 Güncellendi: $(jq -r '.updated' version.json)"
 
 # -------------------------------
-# 2️⃣ Git İşlemleri
+# 2️⃣ Script Güncellemesi
+# -------------------------------
+echo ""
+echo "📝 Script versiyonunu güncelleniyor..."
+VERSION=$(jq -r '.version' version.json)
+sed -i "s/# Güncellenecek JS dosyaları - Versiyon: 3[0-9]*/# Güncellenecek JS dosyaları - Versiyon: $VERSION/" cdnpurgepush.sh
+
+# -------------------------------
+# 3️⃣ Git İşlemleri
 # -------------------------------
 echo ""
 echo "📝 Commit mesajını gir:"
@@ -54,7 +62,7 @@ git commit -m "$commit_msg"
 git push
 
 # -------------------------------
-# 3️⃣ jsDelivr Cache Temizleme
+# 4️⃣ jsDelivr Cache Temizleme
 # -------------------------------
 echo ""
 echo "🚀 jsDelivr önbellek temizleme başlıyor..."
