@@ -80,33 +80,26 @@ function addToCalendar() {
 
   showStatus('loading', 'Takvime ekleniyor...');
 
-  google.script.run
-    .withSuccessHandler(function(response) {
-      if (response.success) {
-        showStatus('success', `${response.data.length} ders işlendi`);
-      } else {
-        showStatus('error', response.error);
-      }
-    })
-    .withFailureHandler(handleError)
-    .getCalendarData(currentSheetKey);
+  // Şimdilik basit bildirim göster (Google Calendar API entegrasyonu için OAuth gerekli)
+  setTimeout(() => {
+    hideStatus('loading');
+    showStatus('success', 'Bu özellik yakında eklenecek! 📅');
+    setTimeout(() => hideStatus('success'), CONFIG.timers.statusHideDelay);
+  }, 1000);
 }
 
 // Debug bilgilerini göster
 function showDebugInfo() {
-  google.script.run
-    .withSuccessHandler(function(result) {
+  callApi('health')
+    .then(function(result) {
       if (result.success) {
         const debugInfo = [
-          `Sayfa: ${result.sheetName}`,
-          `Toplam Satır: ${result.totalRows}`,
-          `Etkinlikler: ${eventCount}`,
-          `Sheet: ${result.url}`,
+          `Sistem Durumu: ${result.status}`,
+          `Zaman: ${result.timestamp}`,
+          `Sheet Sayısı: ${result.sheetCount}`,
           '',
           'Son Güncelleme:',
-          ...result.firstFewRows.slice(0, 2).map((row, i) =>
-            `Satır ${i}: ${row.map(cell => cell || '(boş)').join(' | ')}`
-          )
+          ...result.lastUpdate
         ].join('\n');
 
         alert(debugInfo);
@@ -114,8 +107,9 @@ function showDebugInfo() {
         alert('Hata: ' + result.error);
       }
     })
-    .withFailureHandler(handleError)
-    .debugGetSheetInfo(currentSheetKey);
+    .catch(function(error) {
+      alert('Debug bilgisi alınamadı: ' + error.message);
+    });
 }
 
 // Export modal functions

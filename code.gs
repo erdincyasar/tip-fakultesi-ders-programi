@@ -183,6 +183,22 @@ function doGet(e) {
     // URL parametrelerini al
     const params = (e && e.parameter) ? e.parameter : {};
 
+    // CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '3600'
+    };
+
+    // OPTIONS request (CORS preflight)
+    if (e && e.method === 'OPTIONS') {
+      return ContentService
+        .createTextOutput('')
+        .setMimeType(ContentService.MimeType.TEXT)
+        .setHeaders(corsHeaders);
+    }
+
     // PWA Manifest isteği
     if (params.action === 'manifest') {
       return serveManifest();
@@ -191,6 +207,15 @@ function doGet(e) {
     // Service Worker isteği
     if (params.action === 'sw') {
       return serveServiceWorker();
+    }
+
+    // API endpoint'leri
+    if (params.action === 'api') {
+      const apiResponse = handleApiRequest(params);
+      return ContentService
+        .createTextOutput(JSON.stringify(apiResponse))
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeaders(corsHeaders);
     }
 
     // Özel işlemler için parametre kontrolü
@@ -215,7 +240,7 @@ function doGet(e) {
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
 
-    // Ana uygulamayı yükle
+    // Ana uygulamayı yükle (fallback)
     const template = HtmlService.createTemplateFromFile('Index');
     return template.evaluate()
         .setTitle('Tıp Fakültesi Dönem Programları')
@@ -224,6 +249,41 @@ function doGet(e) {
   } catch (error) {
     console.error('doGet fonksiyonu hatası:', error);
     return createErrorResponse('Sistem hatası oluştu. Lütfen daha sonra tekrar deneyin.');
+  }
+}
+
+/**
+ * API isteklerini yöneten fonksiyon
+ * @param {Object} params - URL parametreleri
+ * @returns {Object} API yanıtı
+ */
+function handleApiRequest(params) {
+  try {
+    const action = params.endpoint;
+
+    switch (action) {
+      case 'getCalendarData':
+        const sheetKey = params.sheetKey;
+        if (!sheetKey) {
+          return { success: false, error: 'sheetKey parametresi gerekli' };
+        }
+        return getCalendarData(sheetKey);
+
+      case 'getAvailableSheets':
+        return {
+          success: true,
+          data: getAvailableSheets()
+        };
+
+      case 'health':
+        return healthCheck();
+
+      default:
+        return { success: false, error: 'Geçersiz endpoint' };
+    }
+  } catch (error) {
+    console.error('API hatası:', error);
+    return { success: false, error: error.message };
   }
 }
 

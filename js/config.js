@@ -2,6 +2,16 @@
 // CONFIG - Yapılandırma
 // ==========================================
 const CONFIG = {
+  // API yapılandırması
+  api: {
+    baseUrl: 'https://script.google.com/macros/s/AKfycbyo2XgEUp8Jk1a7d4OAE6WbU3fIskfXZMp0gTNyBkcLjXvdDxI8OvRehVCDtLlVXRgkWQ/exec',
+    endpoints: {
+      getCalendarData: 'getCalendarData',
+      getAvailableSheets: 'getAvailableSheets',
+      health: 'health'
+    }
+  },
+
   // Sheet yapılandırması
   sheetConfig: {
     'guz': [

@@ -98,10 +98,9 @@ function switchSheet(sheetKey) {
 function loadCalendarData() {
   showStatus('loading', 'Takvim güncelleniyor...');
 
-  google.script.run
-    .withSuccessHandler(handleCalendarData)
-    .withFailureHandler(handleError)
-    .getCalendarData(currentSheetKey);
+  callApi('getCalendarData', { sheetKey: currentSheetKey })
+    .then(handleCalendarData)
+    .catch(handleError);
 }
 
 function handleCalendarData(response) {

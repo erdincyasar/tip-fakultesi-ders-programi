@@ -100,6 +100,52 @@ function addCalendarPlaceholder() {
   calendarContainer.appendChild(placeholder);
 }
 
+// ==========================================
+// API YARDIMCI FONKSİYONLARI
+// ==========================================
+
+/**
+ * Google Apps Script API'sine istek gönderen genel fonksiyon
+ * @param {string} endpoint - API endpoint adı
+ * @param {Object} params - İstek parametreleri
+ * @returns {Promise} API yanıtı
+ */
+function callApi(endpoint, params = {}) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(CONFIG.api.baseUrl);
+    url.searchParams.set('action', 'api');
+    url.searchParams.set('endpoint', endpoint);
+
+    // Parametreleri URL'ye ekle
+    Object.keys(params).forEach(key => {
+      url.searchParams.set(key, params[key]);
+    });
+
+    console.log('API çağrısı:', url.toString());
+
+    fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('API yanıtı:', data);
+      resolve(data);
+    })
+    .catch(error => {
+      console.error('API hatası:', error);
+      reject(error);
+    });
+  });
+}
+
 // Export utility functions
 window.isMobile = isMobile;
 window.isTablet = isTablet;
@@ -114,3 +160,4 @@ window.handleError = handleError;
 window.getElement = getElement;
 window.createElement = createElement;
 window.addCalendarPlaceholder = addCalendarPlaceholder;
+window.callApi = callApi;
